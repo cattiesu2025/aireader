@@ -81,7 +81,7 @@ ipcMain.handle('open-file-dialog', async () => {
 })
 
 ipcMain.handle('read-file', async (_, filePath) => {
-  const buf = fs.readFileSync(filePath)
+  const buf = await fs.promises.readFile(filePath)
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
 })
 

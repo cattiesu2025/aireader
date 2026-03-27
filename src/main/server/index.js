@@ -17,6 +17,11 @@ export function startServer(cardsDB, progressDB) {
   app.use('/api/explain', createExplainRouter())
   app.use('/api/translate', createTranslateRouter())
 
+  app.use((err, req, res, next) => {
+    console.error('[server error]', err.message)
+    res.status(500).json({ error: err.message })
+  })
+
   const server = app.listen(PORT, () => {
     console.log(`[server] listening on :${PORT}`)
   })

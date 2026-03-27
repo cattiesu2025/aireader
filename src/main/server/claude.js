@@ -3,10 +3,11 @@ const ROUTER_BASE = 'http://localhost:3000'
 export const SYSTEM_PROMPT = `你是一位专业的学习辅导助手。
 请始终用中文回答，语言简洁清晰，适合学习理解。`
 
-export async function streamExplain(messages, onChunk, onDone) {
+export async function streamExplain(messages, onChunk, onDone, signal) {
   const response = await fetch(`${ROUTER_BASE}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer dummy' },
+    signal,
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       stream: true,

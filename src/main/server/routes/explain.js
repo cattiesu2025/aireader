@@ -6,6 +6,9 @@ export function createExplainRouter() {
 
   router.post('/', async (req, res) => {
     const { text, imageBase64 } = req.body
+    const abortController = new AbortController()
+
+    req.on('close', () => abortController.abort())
 
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
@@ -22,12 +25,15 @@ export function createExplainRouter() {
     try {
       await streamExplain(
         [{ role: 'user', content }],
-        (chunk) => res.write(`data: ${JSON.stringify({ chunk })}\n\n`),
-        () => { res.write('data: [DONE]\n\n'); res.end() }
+        (chunk) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify({ chunk })}\n\n`) },
+        () => { if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end() } },
+        abortController.signal
       )
     } catch (err) {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-      res.end()
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+        res.end()
+      }
     }
   })
 
