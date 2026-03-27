@@ -5,7 +5,7 @@ export function getCards(db, pdfHash) {
 }
 
 export async function saveCard(db, card) {
-  const newCard = { id: nanoid(), createdAt: Date.now(), ...card }
+  const newCard = { ...card, id: nanoid(), createdAt: Date.now() }
   db.data.cards.push(newCard)
   await db.write()
   return newCard
@@ -20,6 +20,8 @@ export async function updateCard(db, id, updates) {
 }
 
 export async function deleteCard(db, id) {
+  const before = db.data.cards.length
   db.data.cards = db.data.cards.filter(c => c.id !== id)
+  if (db.data.cards.length === before) throw new Error('Card not found')
   await db.write()
 }
