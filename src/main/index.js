@@ -1,7 +1,13 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { initDB } from './db/index.js'
+import { startServer } from './server/index.js'
+
+const DATA_DIR = join(app.getPath('userData'), 'data')
+let expressServer
 
 function createWindow() {
   // Create the browser window.
@@ -38,7 +44,7 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -52,6 +58,10 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
+  // Initialize DB and start Express server
+  const { cardsDB, progressDB } = await initDB(DATA_DIR)
+  expressServer = startServer(cardsDB, progressDB)
+
   createWindow()
 
   app.on('activate', function () {
@@ -59,6 +69,20 @@ app.whenReady().then(() => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+// IPC handlers
+ipcMain.handle('open-file-dialog', async () => {
+  const result = await dialog.showOpenDialog({
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    properties: ['openFile']
+  })
+  return result.canceled ? null : result.filePaths[0]
+})
+
+ipcMain.handle('read-file', async (_, filePath) => {
+  const buf = fs.readFileSync(filePath)
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -69,6 +93,8 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+app.on('before-quit', () => { expressServer?.close() })
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
