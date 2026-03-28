@@ -125,7 +125,7 @@ ipcMain.handle('open-file-dialog', async () => {
 
 ipcMain.handle('read-file', async (_, filePath) => {
   const buf = await fs.promises.readFile(filePath)
-  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+  return buf.toString('base64')
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

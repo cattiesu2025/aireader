@@ -14,9 +14,12 @@ export default function App() {
   const handleOpenFile = async () => {
     const path = await window.electron.openFileDialog()
     if (path) {
-      const buf = await window.electron.readFile(path)
+      const base64 = await window.electron.readFile(path)
+      const binary = atob(base64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
       setFilePath(path)
-      setPdfData(buf)
+      setPdfData(bytes)
       setPdfPath(path)
     }
   }
