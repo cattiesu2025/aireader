@@ -6,6 +6,9 @@
  * @returns {Promise<string>} base64 data URL (image/png)
  */
 export async function captureRegion(pdfCanvas, rect, deviceScale) {
+  if (!deviceScale || deviceScale <= 0) {
+    throw new Error('deviceScale must be a positive number')
+  }
   const sx = Math.round(rect.x * deviceScale)
   const sy = Math.round(rect.y * deviceScale)
   const sw = Math.round(rect.width * deviceScale)
