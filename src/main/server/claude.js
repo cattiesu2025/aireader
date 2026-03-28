@@ -15,6 +15,7 @@ const extraPaths = [
   '/opt/homebrew/bin',
 ].join(':')
 const env = { ...process.env, PATH: `${extraPaths}:${process.env.PATH || ''}` }
+delete env.CLAUDECODE
 
 export async function callClaude(prompt, signal) {
   const fullPrompt = `${SYSTEM_PROMPT}\n\n${prompt}`
@@ -28,6 +29,7 @@ export async function callClaude(prompt, signal) {
     return stdout.trim()
   } catch (err) {
     console.error('[claude error]', err.message)
-    throw new Error(`AI 调用失败：${err.message}`)
+    console.error('[claude stderr]', err.stderr)
+    throw new Error(`AI 调用失败：${err.stderr || err.message}`)
   }
 }
