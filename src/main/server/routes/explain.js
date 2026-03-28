@@ -22,4 +22,4 @@ export function createExplainRouter() {
   return router
 }
 
-const SYSTEM_PROMPT_IMG = `你是一位专业的学习辅导助手。请始终用中文回答，语言简洁清晰，适合学习理解。`
+const SYSTEM_PROMPT_IMG = `你是一位专业的学习辅导助手。请始终用中文回答，语言简洁清晰，适合学习理解。不要在回答末尾添加任何引导性提问、邀请继续提问或建议用户补充信息的语句，直接给出内容即可。`
