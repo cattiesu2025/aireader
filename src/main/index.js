@@ -5,9 +5,50 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { initDB } from './db/index.js'
 import { startServer } from './server/index.js'
+import { spawn } from 'child_process'
+import net from 'net'
 
 const DATA_DIR = join(app.getPath('userData'), 'data')
 let expressServer
+let routerProcess = null
+
+function isPortOpen(port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection(port, '127.0.0.1')
+    socket.on('connect', () => { socket.destroy(); resolve(true) })
+    socket.on('error', () => resolve(false))
+    socket.setTimeout(500, () => { socket.destroy(); resolve(false) })
+  })
+}
+
+async function ensureRouter() {
+  const running = await isPortOpen(3000)
+  if (running) {
+    console.log('[router] already running on :3000')
+    return
+  }
+
+  console.log('[router] starting claude-code-router...')
+  routerProcess = spawn('claude-code-router', [], {
+    stdio: 'pipe',
+    shell: true,
+    detached: false,
+  })
+
+  routerProcess.stdout?.on('data', (d) => console.log('[router]', d.toString().trim()))
+  routerProcess.stderr?.on('data', (d) => console.warn('[router]', d.toString().trim()))
+  routerProcess.on('error', (e) => console.warn('[router] spawn error:', e.message))
+
+  // Wait up to 6 seconds for router to become ready
+  for (let i = 0; i < 12; i++) {
+    await new Promise((r) => setTimeout(r, 500))
+    if (await isPortOpen(3000)) {
+      console.log('[router] ready on :3000')
+      return
+    }
+  }
+  console.warn('[router] did not start in time — AI features may not work')
+}
 
 function createWindow() {
   // Create the browser window.
@@ -58,6 +99,8 @@ app.whenReady().then(async () => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
+  await ensureRouter()
+
   // Initialize DB and start Express server
   const { cardsDB, progressDB } = await initDB(DATA_DIR)
   expressServer = startServer(cardsDB, progressDB)
@@ -94,7 +137,13 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('before-quit', () => { expressServer?.close() })
+app.on('before-quit', () => {
+  expressServer?.close()
+  if (routerProcess) {
+    routerProcess.kill()
+    routerProcess = null
+  }
+})
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
