@@ -98,7 +98,8 @@ export function usePDFSelection(pdfContainerRef, currentPage, scale) {
 
     try {
       const deviceScale = canvas.width / canvas.clientWidth
-      const imageBase64 = await captureRegion(canvas, rect, deviceScale)
+      const dataUrl = await captureRegion(canvas, rect, deviceScale)
+      const imageBase64 = dataUrl.replace(/^data:image\/png;base64,/, '')
       const imagePath = await window.electron.saveTempImage(imageBase64)
       setSelection({
         type: 'region',
