@@ -1,34 +1,58 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import { useState, useRef, useEffect } from 'react'
+import { PDFViewer } from './components/PDFViewer/index.jsx'
+import { Sidebar } from './components/Sidebar/index.jsx'
+import { Toolbar } from './components/Toolbar/index.jsx'
+import { useStore } from './store/useStore.js'
 
-function App() {
-  const ipcHandle = () => window.electron.ipcRenderer.send('ping')
+export default function App() {
+  const [filePath, setFilePath] = useState(null)
+  const [selectionMode, setSelectionMode] = useState('text')
+  const pdfViewerRef = useRef(null)
+  const setPdfPath = useStore((s) => s.setPdfPath)
+
+  const handleOpenFile = async () => {
+    const path = await window.electron.openFileDialog()
+    if (path) {
+      setFilePath(path)
+      setPdfPath(path)
+    }
+  }
+
+  // Shift key temporarily switches to region mode
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Shift' && selectionMode === 'text') {
+        setSelectionMode('region')
+      }
+    }
+    const onKeyUp = (e) => {
+      if (e.key === 'Shift') {
+        setSelectionMode('text')
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [selectionMode])
 
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
+      <Toolbar
+        onOpenFile={handleOpenFile}
+        selectionMode={selectionMode}
+        onModeChange={setSelectionMode}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <PDFViewer
+          ref={pdfViewerRef}
+          filePath={filePath}
+          selectionMode={selectionMode}
+        />
+        <Sidebar pdfViewerRef={pdfViewerRef} />
       </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+    </div>
   )
 }
-
-export default App
