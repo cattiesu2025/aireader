@@ -36,4 +36,6 @@ export const useStore = create((set) => ({
     set((s) => ({ cards: s.cards.filter((c) => c.id !== id) })),
   setHoveredCardId: (id) => set({ hoveredCardId: id }),
   setHoveredRectId: (id) => set({ hoveredRectId: id }),
+  clickedRectId: null,
+  setClickedRectId: (id) => set({ clickedRectId: id }),
 }))

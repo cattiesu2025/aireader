@@ -33,7 +33,7 @@ export function ExplainCard({ card, onScrollToPDF }) {
       await fetch(`${API}/api/cards/${card.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: noteText }),
+        body: JSON.stringify({ note: noteText })
       })
     } catch {}
     setEditingNote(false)
@@ -54,7 +54,7 @@ export function ExplainCard({ card, onScrollToPDF }) {
       await fetch(`${API}/api/cards/${card.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ translation: null }),
+        body: JSON.stringify({ translation: null })
       })
     } catch {}
   }
@@ -85,10 +85,13 @@ export function ExplainCard({ card, onScrollToPDF }) {
 
       {/* AI explanation content */}
       <div className={MD_CLASS}>
-        {card.content
-          ? <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{card.content}</Markdown>
-          : <span className="text-gray-400 animate-pulse">讲解生成中…</span>
-        }
+        {card.content ? (
+          <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+            {card.content}
+          </Markdown>
+        ) : (
+          <span className="text-gray-400 animate-pulse">讲解生成中…</span>
+        )}
       </div>
 
       {/* Translation section */}
@@ -96,10 +99,13 @@ export function ExplainCard({ card, onScrollToPDF }) {
         <div className="mt-1.5 pt-1.5 border-t border-gray-100">
           <div className="flex items-start justify-between gap-1">
             <div className={`${MD_CLASS} text-blue-700 flex-1`}>
-              {card.translation
-                ? <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{card.translation}</Markdown>
-                : <span className="text-gray-400 animate-pulse">翻译中…</span>
-              }
+              {card.translation ? (
+                <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {card.translation}
+                </Markdown>
+              ) : (
+                <span className="text-gray-400 animate-pulse">翻译中…</span>
+              )}
             </div>
             {card.translation && (
               <button
@@ -119,17 +125,11 @@ export function ExplainCard({ card, onScrollToPDF }) {
         className="mt-1.5 flex gap-2 items-center flex-wrap"
         onClick={(e) => e.stopPropagation()}
       >
-        {card.translation === null && card.content && (
-          <button
-            onClick={() => translate(card.id, card.sourceText !== '[图片区域]' ? card.sourceText : card.content)}
-            disabled={isTranslatingThis}
-            className="text-xs text-blue-500 hover:text-blue-700 disabled:opacity-50"
-          >
-            翻译
-          </button>
-        )}
         <button
-          onClick={() => { setNoteText(card.note || ''); setEditingNote(true) }}
+          onClick={() => {
+            setNoteText(card.note || '')
+            setEditingNote(true)
+          }}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
           {card.note ? '编辑笔记' : '+ 笔记'}
@@ -148,8 +148,15 @@ export function ExplainCard({ card, onScrollToPDF }) {
             autoFocus
           />
           <div className="flex gap-2 mt-1">
-            <button onClick={handleSaveNote} className="text-xs text-blue-500 hover:text-blue-700">保存</button>
-            <button onClick={() => setEditingNote(false)} className="text-xs text-gray-400 hover:text-gray-600">取消</button>
+            <button onClick={handleSaveNote} className="text-xs text-blue-500 hover:text-blue-700">
+              保存
+            </button>
+            <button
+              onClick={() => setEditingNote(false)}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              取消
+            </button>
           </div>
         </div>
       )}

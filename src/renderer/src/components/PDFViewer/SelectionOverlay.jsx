@@ -1,4 +1,5 @@
 import { useHoverSync } from '../../hooks/useHoverSync.js'
+import { useStore } from '../../store/useStore.js'
 
 export function SelectionOverlay({ cards, pageNum }) {
   const pageCards = cards.filter((c) => c.pageNum === pageNum)
@@ -15,11 +16,13 @@ export function SelectionOverlay({ cards, pageNum }) {
 
 function CardRect({ card }) {
   const { pdfHandlers, isHighlightedFromSidebar } = useHoverSync(card.id)
+  const setClickedRectId = useStore((s) => s.setClickedRectId)
   const { rect } = card
 
   return (
     <div
       {...pdfHandlers}
+      onClick={() => setClickedRectId(card.id)}
       className={`absolute pointer-events-auto cursor-pointer transition-all duration-200 ${
         isHighlightedFromSidebar
           ? 'bg-blue-300/50 ring-2 ring-blue-500 animate-pulse'
