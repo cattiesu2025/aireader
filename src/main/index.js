@@ -1,4 +1,5 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, protocol, net as electronNet } from 'electron'
+import { createHash } from 'crypto'
 import { join } from 'path'
 import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -7,6 +8,11 @@ import { initDB } from './db/index.js'
 import { startServer } from './server/index.js'
 import { spawn } from 'child_process'
 import net from 'net'
+
+// Register custom protocol before app is ready
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'localfile', privileges: { secure: true, standard: true, supportFetchAPI: true } }
+])
 
 const DATA_DIR = join(app.getPath('userData'), 'data')
 let expressServer
@@ -105,6 +111,12 @@ app.whenReady().then(async () => {
   const { cardsDB, progressDB } = await initDB(DATA_DIR)
   expressServer = startServer(cardsDB, progressDB)
 
+  // Serve local files via localfile:// protocol (avoids IPC memory issues)
+  protocol.handle('localfile', (request) => {
+    const filePath = decodeURIComponent(request.url.replace('localfile://', ''))
+    return electronNet.fetch(`file://${filePath}`)
+  })
+
   createWindow()
 
   app.on('activate', function () {
@@ -123,9 +135,9 @@ ipcMain.handle('open-file-dialog', async () => {
   return result.canceled ? null : result.filePaths[0]
 })
 
-ipcMain.handle('read-file', async (_, filePath) => {
+ipcMain.handle('hash-file', async (_, filePath) => {
   const buf = await fs.promises.readFile(filePath)
-  return buf.toString('base64')
+  return createHash('sha256').update(buf).digest('hex')
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

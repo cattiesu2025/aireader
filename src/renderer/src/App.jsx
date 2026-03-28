@@ -6,7 +6,6 @@ import { useStore } from './store/useStore.js'
 
 export default function App() {
   const [filePath, setFilePath] = useState(null)
-  const [pdfData, setPdfData] = useState(null)
   const [selectionMode, setSelectionMode] = useState('text')
   const pdfViewerRef = useRef(null)
   const setPdfPath = useStore((s) => s.setPdfPath)
@@ -14,12 +13,7 @@ export default function App() {
   const handleOpenFile = async () => {
     const path = await window.electron.openFileDialog()
     if (path) {
-      const base64 = await window.electron.readFile(path)
-      const binary = atob(base64)
-      const bytes = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
       setFilePath(path)
-      setPdfData(bytes)
       setPdfPath(path)
     }
   }
@@ -55,7 +49,6 @@ export default function App() {
         <PDFViewer
           ref={pdfViewerRef}
           filePath={filePath}
-          pdfData={pdfData}
           selectionMode={selectionMode}
         />
         <Sidebar pdfViewerRef={pdfViewerRef} />

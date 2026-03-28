@@ -4,7 +4,6 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import { useStore } from '../../store/useStore.js'
 import { usePDFSelection } from '../../hooks/usePDFSelection.js'
-import { hashFile } from '../../lib/pdfHash.js'
 import { SelectionOverlay } from './SelectionOverlay.jsx'
 import { ExplainButton } from './ExplainButton.jsx'
 
@@ -15,7 +14,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 const API = 'http://localhost:3799'
 
-export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, selectionMode }, ref) {
+export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode }, ref) {
   const containerRef = useRef(null)
   const scrollRef = useRef(null)
   const {
@@ -33,10 +32,10 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, sele
 
   // When a new PDF is opened: hash it, load saved cards + progress
   useEffect(() => {
-    if (!filePath || !pdfData) return
+    if (!filePath) return
     ;(async () => {
       try {
-        const hash = await hashFile(pdfData.buffer)
+        const hash = await window.electron.hashFile(filePath)
         setPdfHash(hash)
 
         const [savedCards, progress] = await Promise.all([
@@ -49,7 +48,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, sele
         console.error('[PDFViewer] load error:', err)
       }
     })()
-  }, [filePath, pdfData])
+  }, [filePath])
 
   // Save reading progress whenever page changes
   useEffect(() => {
@@ -73,7 +72,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, sele
     },
   }))
 
-  if (!pdfData) {
+  if (!filePath) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm select-none">
         请从工具栏打开 PDF 文件
@@ -90,7 +89,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, sele
         {...(mode === 'region' ? regionHandlers : {})}
       >
         <Document
-          file={pdfData ? { data: pdfData } : null}
+          file={filePath ? `localfile://${filePath}` : null}
           onLoadSuccess={({ numPages }) => setTotalPages(numPages)}
           loading={<div className="text-gray-400 text-sm p-4">加载中…</div>}
         >
