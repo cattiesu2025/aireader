@@ -54,7 +54,7 @@ export function useExplain() {
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
           const data = line.slice(6).trim()
-          if (data === '[DONE]') break
+          if (data === '[DONE]') return
           try {
             const { chunk, error } = JSON.parse(data)
             if (error) throw new Error(error)

@@ -36,7 +36,9 @@ export async function streamExplain(messages, onChunk, onDone, signal) {
         const json = JSON.parse(data)
         const chunk = json.choices?.[0]?.delta?.content
         if (chunk) onChunk(chunk)
-      } catch {}
+      } catch (e) {
+        console.warn('[claude SSE] parse error:', e.message)
+      }
     }
   }
   onDone()
