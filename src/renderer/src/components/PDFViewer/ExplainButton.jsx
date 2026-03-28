@@ -12,19 +12,22 @@ export function ExplainButton() {
   const buttonTop = rect.y + rect.height + 6
 
   const handleExplain = async () => {
-    await explain(selection)
+    const sel = selection
     clearSelection()
+    await explain(sel)
   }
 
   const handleTranslate = async () => {
-    await translateSelection(selection)
+    const sel = selection
     clearSelection()
+    await translateSelection(sel)
   }
 
   return (
     <div
       className="absolute z-20 flex gap-1 shadow-lg"
       style={{ left: rect.x, top: buttonTop }}
+      onMouseUp={(e) => e.stopPropagation()}
     >
       <button
         onClick={handleExplain}
