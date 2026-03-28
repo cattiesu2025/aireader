@@ -91,7 +91,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
         {...(mode === 'region' ? regionHandlers : {})}
       >
         <Document
-          file={filePath}
+          file={`file://${filePath}`}
           onLoadSuccess={({ numPages }) => setTotalPages(numPages)}
           loading={<div className="text-gray-400 text-sm p-4">加载中…</div>}
         >
