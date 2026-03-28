@@ -21,36 +21,28 @@ const env = {
 delete env.CLAUDECODE
 delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN
 
-// Interactive mode: spawns claude without --print, pipes prompt via stdin.
-// Used for image references since --print doesn't support images.
+// Image mode: uses --print + --dangerously-skip-permissions so claude can
+// read image files from disk without interactive permission prompts.
 export function callClaudeInteractive(prompt) {
   return new Promise((resolve, reject) => {
-    console.log('[claude] interactive mode')
-    const proc = spawn(CLAUDE_BIN, ['--dangerously-skip-permissions'], {
+    console.log('[claude] image mode')
+    const proc = spawn(CLAUDE_BIN, ['--dangerously-skip-permissions', '--print', prompt], {
       env,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ['ignore', 'pipe', 'pipe'],
     })
-
-    proc.stdin.write(prompt + '\n')
-    proc.stdin.end()
 
     let out = '', err = ''
     proc.stdout.on('data', (d) => (out += d.toString()))
     proc.stderr.on('data', (d) => (err += d.toString()))
 
     proc.on('close', (code) => {
-      if (err) console.warn('[claude-interactive stderr]', err.trim())
+      if (err) console.warn('[claude-image stderr]', err.trim())
       if (code !== 0) {
+        console.error('[claude-image] stdout so far:', out.trim())
         reject(new Error(err.trim() || `exit code ${code}`))
-        return
+      } else {
+        resolve(out.trim())
       }
-      // Strip ANSI escape sequences and control chars
-      const clean = out
-        .replace(/\x1B\[[0-9;]*[A-Za-z]/g, '')
-        .replace(/\x1B\][^\x07]*\x07/g, '')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-        .trim()
-      resolve(clean)
     })
 
     proc.on('error', reject)
