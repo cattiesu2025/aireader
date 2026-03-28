@@ -4,6 +4,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import { useStore } from '../../store/useStore.js'
 import { usePDFSelection } from '../../hooks/usePDFSelection.js'
+import { useExplain } from '../../hooks/useExplain.js'
 import { SelectionOverlay } from './SelectionOverlay.jsx'
 import { ExplainButton } from './ExplainButton.jsx'
 
@@ -24,6 +25,15 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
 
   const { mode, setMode, currentRect, drawing, regionHandlers } =
     usePDFSelection(containerRef, currentPage, scale)
+  const { explain, streaming } = useExplain()
+
+  const handleExplainPage = async () => {
+    const canvas = containerRef.current?.querySelector('canvas')
+    if (!canvas) return
+    const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '')
+    const imagePath = await window.electron.saveTempImage(base64)
+    await explain({ type: 'region', text: '[整页讲解]', imagePath, pageNum: currentPage, rect: { x: 0, y: 0, width: 0, height: 0 } })
+  }
 
   // Sync external mode prop into hook state
   useEffect(() => {
@@ -135,6 +145,13 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
           className="px-3 py-1.5 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           下一页 ›
+        </button>
+        <button
+          onClick={handleExplainPage}
+          disabled={streaming}
+          className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {streaming ? '生成中…' : '讲解本页'}
         </button>
       </div>
     </div>
