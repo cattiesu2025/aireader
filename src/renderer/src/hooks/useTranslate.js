@@ -12,47 +12,21 @@ export function useTranslate() {
     setTranslatingId(cardId)
     updateCard(cardId, { translation: '' })
 
-    let fullTranslation = ''
     try {
       const res = await fetch(`${API}/api/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       })
+      const { content, error } = await res.json()
+      if (error) throw new Error(error)
 
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
+      updateCard(cardId, { translation: content })
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop()
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
-          if (data === '[DONE]') return
-          try {
-            const { chunk, error } = JSON.parse(data)
-            if (error) throw new Error(error)
-            if (chunk) {
-              fullTranslation += chunk
-              updateCard(cardId, { translation: fullTranslation })
-            }
-          } catch (e) {
-            if (e.message !== 'Unexpected end of JSON input') throw e
-          }
-        }
-      }
-
-      // Persist translation
       await fetch(`${API}/api/cards/${cardId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ translation: fullTranslation }),
+        body: JSON.stringify({ translation: content }),
       })
     } catch (err) {
       updateCard(cardId, { translation: `[错误] ${err.message}` })
