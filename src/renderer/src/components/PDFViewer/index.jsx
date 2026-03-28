@@ -15,7 +15,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 const API = 'http://localhost:3799'
 
-export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode }, ref) {
+export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, selectionMode }, ref) {
   const containerRef = useRef(null)
   const scrollRef = useRef(null)
   const {
@@ -33,11 +33,10 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
 
   // When a new PDF is opened: hash it, load saved cards + progress
   useEffect(() => {
-    if (!filePath) return
+    if (!filePath || !pdfData) return
     ;(async () => {
       try {
-        const buf = await window.electron.readFile(filePath)
-        const hash = await hashFile(buf)
+        const hash = await hashFile(pdfData)
         setPdfHash(hash)
 
         const [savedCards, progress] = await Promise.all([
@@ -50,7 +49,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
         console.error('[PDFViewer] load error:', err)
       }
     })()
-  }, [filePath])
+  }, [filePath, pdfData])
 
   // Save reading progress whenever page changes
   useEffect(() => {
@@ -74,7 +73,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
     },
   }))
 
-  if (!filePath) {
+  if (!pdfData) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm select-none">
         请从工具栏打开 PDF 文件
@@ -91,7 +90,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
         {...(mode === 'region' ? regionHandlers : {})}
       >
         <Document
-          file={`file://${filePath}`}
+          file={pdfData ? { data: pdfData } : null}
           onLoadSuccess={({ numPages }) => setTotalPages(numPages)}
           loading={<div className="text-gray-400 text-sm p-4">加载中…</div>}
         >
