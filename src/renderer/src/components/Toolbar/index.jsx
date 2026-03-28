@@ -1,7 +1,16 @@
+import { useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 
 export function Toolbar({ onOpenFile, selectionMode, onModeChange }) {
-  const { scale, setScale, currentPage, totalPages } = useStore()
+  const { scale, setScale, currentPage, totalPages, setCurrentPage } = useStore()
+  const [pageInput, setPageInput] = useState('')
+  const [editing, setEditing] = useState(false)
+
+  const commitPage = () => {
+    const n = parseInt(pageInput, 10)
+    if (!isNaN(n) && n >= 1 && n <= totalPages) setCurrentPage(n)
+    setEditing(false)
+  }
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0 select-none">
@@ -62,13 +71,31 @@ export function Toolbar({ onOpenFile, selectionMode, onModeChange }) {
         </button>
       </div>
 
-      {/* Page info (right-aligned) */}
+      {/* Page navigation (right-aligned) */}
       {totalPages > 0 && (
         <>
           <div className="h-4 w-px bg-gray-200" />
-          <span className="text-xs text-gray-400 tabular-nums ml-auto">
-            第 {currentPage} / {totalPages} 页
-          </span>
+          <div className="flex items-center gap-1 ml-auto text-xs text-gray-500 select-none">
+            <span>第</span>
+            {editing ? (
+              <input
+                autoFocus
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+                onBlur={commitPage}
+                onKeyDown={(e) => { if (e.key === 'Enter') commitPage(); if (e.key === 'Escape') setEditing(false) }}
+                className="w-12 text-center border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none"
+              />
+            ) : (
+              <button
+                onClick={() => { setPageInput(String(currentPage)); setEditing(true) }}
+                className="w-12 text-center border border-gray-200 rounded px-1 py-0.5 hover:border-blue-300 tabular-nums"
+              >
+                {currentPage}
+              </button>
+            )}
+            <span>/ {totalPages} 页</span>
+          </div>
         </>
       )}
     </div>

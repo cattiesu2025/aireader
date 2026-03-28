@@ -74,14 +74,14 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
 
   if (!filePath) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-sm select-none">
+      <div className="w-1/2 flex items-center justify-center text-gray-400 text-sm select-none">
         请从工具栏打开 PDF 文件
       </div>
     )
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-auto bg-gray-100 flex flex-col items-center p-4">
+    <div ref={scrollRef} className="w-1/2 overflow-auto bg-gray-100 flex flex-col items-center p-4">
       <div
         ref={containerRef}
         className="relative"

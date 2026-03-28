@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useHoverSync } from '../../hooks/useHoverSync.js'
 import { useTranslate } from '../../hooks/useTranslate.js'
 import { useStore } from '../../store/useStore.js'
@@ -42,18 +44,22 @@ export function ExplainCard({ card, onScrollToPDF }) {
       </p>
 
       {/* AI explanation content */}
-      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+      <div className="text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none
+        prose-headings:font-semibold prose-headings:text-gray-800 prose-headings:mt-2 prose-headings:mb-1
+        prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0
+        prose-table:text-xs prose-th:bg-gray-50 prose-td:border prose-th:border
+        prose-strong:text-gray-800 prose-code:text-xs prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded">
         {card.content
-          ? card.content
+          ? <Markdown remarkPlugins={[remarkGfm]}>{card.content}</Markdown>
           : <span className="text-gray-400 animate-pulse">讲解生成中…</span>
         }
       </div>
 
       {/* Translation section */}
       {card.translation !== null && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+        <div className="mt-2 pt-2 border-t border-gray-100 text-sm text-blue-700 leading-relaxed prose prose-sm max-w-none prose-p:my-1">
           {card.translation
-            ? <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap break-words">{card.translation}</p>
+            ? <Markdown remarkPlugins={[remarkGfm]}>{card.translation}</Markdown>
             : <span className="text-xs text-gray-400 animate-pulse">翻译中…</span>
           }
         </div>

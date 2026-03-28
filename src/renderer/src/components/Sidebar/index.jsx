@@ -14,7 +14,7 @@ export function Sidebar({ pdfViewerRef }) {
   }
 
   return (
-    <div className="w-80 flex-shrink-0 bg-gray-50 border-l border-gray-200 flex flex-col overflow-hidden">
+    <div className="w-1/2 flex-shrink-0 bg-gray-50 border-l border-gray-200 flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
         <h2 className="text-sm font-semibold text-gray-700">AI 讲解</h2>
         <p className="text-xs text-gray-400 mt-0.5">

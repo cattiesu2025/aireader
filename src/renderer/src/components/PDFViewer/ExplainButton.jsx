@@ -4,7 +4,7 @@ import { useExplain } from '../../hooks/useExplain.js'
 export function ExplainButton() {
   const selection = useStore((s) => s.selection)
   const clearSelection = useStore((s) => s.clearSelection)
-  const { explain, streaming } = useExplain()
+  const { explain, translateSelection, streaming } = useExplain()
 
   if (!selection) return null
 
@@ -13,6 +13,11 @@ export function ExplainButton() {
 
   const handleExplain = async () => {
     await explain(selection)
+    clearSelection()
+  }
+
+  const handleTranslate = async () => {
+    await translateSelection(selection)
     clearSelection()
   }
 
@@ -26,7 +31,14 @@ export function ExplainButton() {
         disabled={streaming}
         className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {streaming ? '讲解中…' : '讲解'}
+        {streaming ? '生成中…' : '讲解'}
+      </button>
+      <button
+        onClick={handleTranslate}
+        disabled={streaming}
+        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        翻译
       </button>
       <button
         onClick={clearSelection}
