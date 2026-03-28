@@ -36,7 +36,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, pdfData, sele
     if (!filePath || !pdfData) return
     ;(async () => {
       try {
-        const hash = await hashFile(pdfData)
+        const hash = await hashFile(pdfData.slice(0))
         setPdfHash(hash)
 
         const [savedCards, progress] = await Promise.all([
