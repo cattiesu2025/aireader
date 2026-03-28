@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog, protocol, net as electronNet } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, protocol } from 'electron'
 import { createHash } from 'crypto'
 import { join } from 'path'
 import fs from 'fs'
@@ -111,10 +111,15 @@ app.whenReady().then(async () => {
   const { cardsDB, progressDB } = await initDB(DATA_DIR)
   expressServer = startServer(cardsDB, progressDB)
 
-  // Serve local files via localfile:// protocol (avoids IPC memory issues)
-  protocol.handle('localfile', (request) => {
-    const filePath = decodeURIComponent(request.url.replace('localfile://', ''))
-    return electronNet.fetch(`file://${filePath}`)
+  // Serve local files via localfile:// protocol
+  protocol.handle('localfile', async (request) => {
+    try {
+      const filePath = decodeURIComponent(new URL(request.url).pathname)
+      const data = await fs.promises.readFile(filePath)
+      return new Response(data, { headers: { 'content-type': 'application/pdf' } })
+    } catch (e) {
+      return new Response('Not found', { status: 404 })
+    }
   })
 
   createWindow()
