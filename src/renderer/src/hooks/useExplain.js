@@ -28,7 +28,10 @@ export function useExplain() {
       const res = await fetch(`${API}/api/explain`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: selection.text }),
+        body: JSON.stringify({
+          text: selection.imagePath ? null : selection.text,
+          imagePath: selection.imagePath || null,
+        }),
       })
       const { content, error } = await res.json()
       if (error) throw new Error(error)
@@ -55,6 +58,7 @@ export function useExplain() {
       updateCard(tempId, { content: `[错误] ${err.message}` })
     } finally {
       setLoading(false)
+      if (selection.imagePath) window.electron.deleteTempImage(selection.imagePath)
     }
   }, [loading, pdfHash, addCard, updateCard])
 

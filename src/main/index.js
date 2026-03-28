@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, protocol } from 'electron'
-import { createHash } from 'crypto'
+import { createHash, randomBytes } from 'crypto'
 import { join } from 'path'
+import { tmpdir } from 'os'
 import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -143,6 +144,17 @@ ipcMain.handle('open-file-dialog', async () => {
 ipcMain.handle('hash-file', async (_, filePath) => {
   const buf = await fs.promises.readFile(filePath)
   return createHash('sha256').update(buf).digest('hex')
+})
+
+ipcMain.handle('save-temp-image', async (_, base64Data) => {
+  const id = randomBytes(8).toString('hex')
+  const filePath = join(tmpdir(), `aireader_${id}.png`)
+  await fs.promises.writeFile(filePath, Buffer.from(base64Data, 'base64'))
+  return filePath
+})
+
+ipcMain.handle('delete-temp-image', async (_, filePath) => {
+  try { await fs.promises.unlink(filePath) } catch {}
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -97,13 +97,13 @@ export function usePDFSelection(pdfContainerRef, currentPage, scale) {
     }
 
     try {
-      // deviceScale = canvas physical pixels / canvas CSS width
       const deviceScale = canvas.width / canvas.clientWidth
       const imageBase64 = await captureRegion(canvas, rect, deviceScale)
+      const imagePath = await window.electron.saveTempImage(imageBase64)
       setSelection({
         type: 'region',
-        text: null,
-        imageBase64,
+        text: '[图片区域]',
+        imagePath,
         pageNum: currentPage,
         rect,
       })
