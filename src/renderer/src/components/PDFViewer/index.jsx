@@ -20,7 +20,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
   const scrollRef = useRef(null)
   const {
     currentPage, totalPages, scale, cards, pdfHash,
-    setCurrentPage, setTotalPages, setPdfHash, setCards, setScale,
+    setCurrentPage, setTotalPages, setPdfHash, setCards,
   } = useStore()
 
   const { mode, setMode, currentRect, drawing, regionHandlers } =
@@ -113,7 +113,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
             />
           </Document>
 
-          <SelectionOverlay cards={cards} pageNum={currentPage} />
+          <SelectionOverlay cards={cards} pageNum={currentPage} scale={scale} />
           <ExplainButton />
 
           {/* Region drag preview */}

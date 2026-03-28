@@ -43,6 +43,7 @@ export function usePDFSelection(pdfContainerRef, currentPage, scale) {
           y: domRect.top - containerRect.top,
           width: domRect.width,
           height: domRect.height,
+          captureScale: scale,
         },
       })
     }
@@ -106,7 +107,7 @@ export function usePDFSelection(pdfContainerRef, currentPage, scale) {
         text: '[图片区域]',
         imagePath,
         pageNum: currentPage,
-        rect,
+        rect: { ...rect, captureScale: scale },
       })
     } catch (err) {
       console.warn('[usePDFSelection] captureRegion failed:', err.message)

@@ -37,13 +37,6 @@ export function ExplainButton() {
         {streaming ? '生成中…' : '讲解'}
       </button>
       <button
-        onClick={handleTranslate}
-        disabled={streaming}
-        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        翻译
-      </button>
-      <button
         onClick={clearSelection}
         className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200 border border-gray-300"
       >
