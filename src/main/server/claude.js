@@ -26,7 +26,7 @@ delete env.CLAUDE_CODE_SESSION_ACCESS_TOKEN
 export function callClaudeInteractive(prompt) {
   return new Promise((resolve, reject) => {
     console.log('[claude] interactive mode')
-    const proc = spawn(CLAUDE_BIN, [], {
+    const proc = spawn(CLAUDE_BIN, ['--dangerously-skip-permissions'], {
       env,
       stdio: ['pipe', 'pipe', 'pipe'],
     })
