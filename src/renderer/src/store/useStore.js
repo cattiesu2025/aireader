@@ -32,6 +32,8 @@ export const useStore = create((set) => ({
     set((s) => ({
       cards: s.cards.map((c) => (c.id === id ? { ...c, ...updates } : c)),
     })),
+  removeCard: (id) =>
+    set((s) => ({ cards: s.cards.filter((c) => c.id !== id) })),
   setHoveredCardId: (id) => set({ hoveredCardId: id }),
   setHoveredRectId: (id) => set({ hoveredRectId: id }),
 }))
