@@ -50,7 +50,7 @@ export function usePDFSelection(pdfContainerRef, currentPage, scale) {
 
     document.addEventListener('mouseup', handleMouseUp)
     return () => document.removeEventListener('mouseup', handleMouseUp)
-  }, [mode, currentPage, pdfContainerRef, setSelection])
+  }, [mode, currentPage, scale, pdfContainerRef, setSelection])
 
   // --- REGION SELECTION MODE ---
   const onRegionMouseDown = useCallback((e) => {
@@ -114,7 +114,7 @@ export function usePDFSelection(pdfContainerRef, currentPage, scale) {
     } finally {
       setCurrentRect(null)
     }
-  }, [drawing, currentRect, pdfContainerRef, currentPage, setSelection])
+  }, [drawing, currentRect, pdfContainerRef, currentPage, scale, setSelection])
 
   return {
     mode,

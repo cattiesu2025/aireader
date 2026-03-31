@@ -25,8 +25,12 @@ export function ExplainButton() {
 
   return (
     <div
-      className="absolute z-20 flex gap-1 shadow-lg"
+      className="absolute z-20 flex gap-1 shadow-lg select-none"
       style={{ left: rect.x, top: buttonTop }}
+      onMouseDown={(e) => {
+        e.stopPropagation()
+        window.getSelection()?.removeAllRanges()
+      }}
       onMouseUp={(e) => e.stopPropagation()}
     >
       <button
