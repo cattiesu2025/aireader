@@ -16,19 +16,21 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const API = 'http://localhost:3799'
 
 export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode }, ref) {
-  const containerRef = useRef(null)
   const scrollRef = useRef(null)
+  const pageRefs = useRef({})          // { pageNum: HTMLElement }
+  const pendingScrollPage = useRef(null)
+
   const {
-    currentPage, totalPages, scale, cards, pdfHash,
-    setCurrentPage, setTotalPages, setPdfHash, setCards,
+    currentPage, totalPages, scale, cards, pdfHash, selection,
+    setCurrentPage, setTotalPages, setPdfHash, setCards, setScale,
   } = useStore()
 
-  const { mode, setMode, currentRect, drawing, regionHandlers } =
-    usePDFSelection(containerRef, currentPage, scale)
+  const { mode, setMode, currentRect, drawing, drawingPage, makeRegionHandlers } =
+    usePDFSelection(pageRefs, currentPage, scale)
   const { explain, streaming } = useExplain()
 
   const handleExplainPage = async () => {
-    const canvas = containerRef.current?.querySelector('canvas')
+    const canvas = pageRefs.current[currentPage]?.querySelector('canvas')
     if (!canvas) return
     const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '')
     const imagePath = await window.electron.saveTempImage(base64)
@@ -43,17 +45,20 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
   // When a new PDF is opened: hash it, load saved cards + progress
   useEffect(() => {
     if (!filePath) return
+    pageRefs.current = {}
     ;(async () => {
       try {
         const hash = await window.electron.hashFile(filePath)
         setPdfHash(hash)
-
         const [savedCards, progress] = await Promise.all([
           fetch(`${API}/api/cards?pdfHash=${hash}`).then((r) => r.json()),
           fetch(`${API}/api/progress?pdfHash=${hash}`).then((r) => r.json()),
         ])
         setCards(savedCards)
-        if (progress?.page) setCurrentPage(progress.page)
+        if (progress?.page && progress.page > 1) {
+          setCurrentPage(progress.page)
+          pendingScrollPage.current = progress.page
+        }
       } catch (err) {
         console.error('[PDFViewer] load error:', err)
       }
@@ -70,15 +75,62 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
     }).catch(() => {})
   }, [currentPage, pdfHash])
 
+  // Auto-fit scale from first page's natural width
+  const handlePageLoadSuccess = (page) => {
+    if (!scrollRef.current) return
+    const naturalWidth = page.getViewport({ scale: 1.0 }).width
+    const availableWidth = scrollRef.current.clientWidth - 32 // 2 × p-4
+    setScale(availableWidth / naturalWidth)
+  }
+
+  // IntersectionObserver: track which page is most visible while scrolling.
+  // Also scrolls to saved progress page after pages are first rendered.
+  useEffect(() => {
+    if (!totalPages || !scrollRef.current) return
+
+    // Restore saved progress position
+    if (pendingScrollPage.current) {
+      const target = pendingScrollPage.current
+      pendingScrollPage.current = null
+      setTimeout(() => {
+        pageRefs.current[target]?.scrollIntoView({ block: 'start' })
+      }, 200)
+    }
+
+    const ratios = {}
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          ratios[parseInt(e.target.dataset.page)] = e.intersectionRatio
+        })
+        let maxPage = 1, maxRatio = -1
+        Object.entries(ratios).forEach(([page, ratio]) => {
+          if (ratio > maxRatio) { maxRatio = ratio; maxPage = parseInt(page) }
+        })
+        if (maxRatio > 0) setCurrentPage(maxPage)
+      },
+      { root: scrollRef.current, threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0] },
+    )
+    Object.values(pageRefs.current).forEach((el) => { if (el) observer.observe(el) })
+    return () => observer.disconnect()
+  }, [totalPages])
+
+  const scrollToPage = (pageNum) => {
+    pageRefs.current[pageNum]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   // Expose scrollToCard to parent via ref
   useImperativeHandle(ref, () => ({
     scrollToCard: (card) => {
-      setCurrentPage(card.pageNum)
-      setTimeout(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTo({ top: Math.max(0, card.rect.y - 80), behavior: 'smooth' })
-        }
-      }, 150)
+      const pageEl = pageRefs.current[card.pageNum]
+      const scrollContainer = scrollRef.current
+      if (!pageEl || !scrollContainer) return
+      const ratio = scale / (card.rect.captureScale || scale)
+      const scrollTop = scrollContainer.scrollTop
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const pageRect = pageEl.getBoundingClientRect()
+      const targetScrollTop = scrollTop + (pageRect.top - containerRect.top) + card.rect.y * ratio - 80
+      scrollContainer.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' })
     },
   }))
 
@@ -93,49 +145,56 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
   return (
     <div className="w-1/2 relative flex flex-col overflow-hidden">
       {/* Scrollable PDF area */}
-      <div ref={scrollRef} className="flex-1 overflow-auto bg-gray-100 flex flex-col items-center p-4 pb-16">
-        <div
-          ref={containerRef}
-          className="relative"
-          style={{ cursor: mode === 'region' ? 'crosshair' : 'text', userSelect: mode === 'region' ? 'none' : 'text' }}
-          {...(mode === 'region' ? regionHandlers : {})}
+      <div ref={scrollRef} className="flex-1 overflow-auto bg-gray-100 flex flex-col p-4 pb-16">
+        <Document
+          file={filePath ? `localfile://localhost${filePath}` : null}
+          onLoadSuccess={({ numPages }) => setTotalPages(numPages)}
+          loading={<div className="text-gray-400 text-sm p-4">加载中…</div>}
         >
-          <Document
-            file={filePath ? `localfile://localhost${filePath}` : null}
-            onLoadSuccess={({ numPages }) => setTotalPages(numPages)}
-            loading={<div className="text-gray-400 text-sm p-4">加载中…</div>}
-          >
-            <Page
-              pageNumber={currentPage}
-              scale={scale}
-              renderTextLayer={mode === 'text'}
-              renderAnnotationLayer={false}
-            />
-          </Document>
-
-          <SelectionOverlay cards={cards} pageNum={currentPage} scale={scale} />
-          <ExplainButton />
-
-          {/* Region drag preview */}
-          {drawing && currentRect && (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
             <div
-              className="absolute border-2 border-blue-500 border-dashed bg-blue-50/20 pointer-events-none"
+              key={pageNum}
+              data-page={pageNum}
+              ref={(el) => { pageRefs.current[pageNum] = el }}
+              className="relative mx-auto mb-4"
               style={{
-                zIndex: 20,
-                left: currentRect.x,
-                top: currentRect.y,
-                width: currentRect.width,
-                height: currentRect.height,
+                cursor: mode === 'region' ? 'crosshair' : 'text',
+                userSelect: mode === 'region' ? 'none' : 'text',
               }}
-            />
-          )}
-        </div>
+              {...(mode === 'region' ? makeRegionHandlers(pageNum) : {})}
+            >
+              <Page
+                pageNumber={pageNum}
+                scale={scale}
+                onLoadSuccess={pageNum === 1 ? handlePageLoadSuccess : undefined}
+                renderTextLayer={mode === 'text'}
+                renderAnnotationLayer={false}
+              />
+              <SelectionOverlay cards={cards} pageNum={pageNum} scale={scale} />
+              {selection?.pageNum === pageNum && <ExplainButton />}
+
+              {/* Region drag preview */}
+              {drawing && drawingPage === pageNum && currentRect && (
+                <div
+                  className="absolute border-2 border-blue-500 border-dashed bg-blue-50/20 pointer-events-none"
+                  style={{
+                    zIndex: 20,
+                    left: currentRect.x,
+                    top: currentRect.y,
+                    width: currentRect.width,
+                    height: currentRect.height,
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </Document>
       </div>
 
       {/* Fixed bottom navigation bar */}
       <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-3 px-4 py-2 bg-white/90 backdrop-blur border-t border-gray-200 text-sm text-gray-600 select-none z-30">
         <button
-          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          onClick={() => scrollToPage(Math.max(1, currentPage - 1))}
           disabled={currentPage <= 1}
           className="px-3 py-1.5 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
         >
@@ -143,7 +202,7 @@ export const PDFViewer = forwardRef(function PDFViewer({ filePath, selectionMode
         </button>
         <span className="text-gray-500 tabular-nums">{currentPage} / {totalPages || '–'}</span>
         <button
-          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          onClick={() => scrollToPage(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage >= totalPages}
           className="px-3 py-1.5 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
         >
